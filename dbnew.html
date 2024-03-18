@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes"/>
+    <title>DB</title>
+    <link rel="shortcut icon" href="favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>.hidden{display:none;}</style>
+  </head>
+  <body>
+    <div id="loading" class="text-center loading-fast">
+      <span style="box-sizing:border-box;display:inline-block;overflow:hidden;width:100px;height:100px;background:none;opacity:1;border:0;margin:0;padding:0;position:relative">
+        <img alt="loading" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" decoding="async" style="position:absolute;top:0;left:0;bottom:0;right:0;box-sizing:border-box;padding:0;border:none;margin:auto;display:block;width:0;height:0;min-width:100%;max-width:100%;min-height:100%;max-height:100%" />
+      </span>
+      <h2>Loading...</h2>
+    </div>
+    <div id="main" class="hidden container-fluid table-responsive">
+      <div class="row justify-content-center">
+        <div id="column" class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-3 p-5">
+          <nav class="navbar mb-3">
+            <div class="container-fluid d-flex p-0">
+              <h2 class="me-auto m-0">User Data</h2>
+              <button onclick="javascript:window.location.reload();" class="btn btn-secondary d-flex me-2">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+              <button id="theme-switcher" class="btn btn-secondary d-flex">
+                <i id="theme-icon" class="fas fa-sun"></i>
+              </button>
+            </div>
+          </nav>
+          <hr class="mb-5"/>
+          <div id="userList" class="mx-auto"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const themeIcon = document.getElementById('theme-icon');
+        const htmlElement = document.documentElement;
+    
+        themeSwitcher.addEventListener('click', function() {
+          // Check if the current theme is light or dark
+          const currentTheme = htmlElement.getAttribute('data-bs-theme');
+    
+          const keys = document.querySelectorAll('.key');
+          const values = document.querySelectorAll('.value');
+
+          // Toggle the data-bs-theme attribute and change the icon
+          if (currentTheme === 'dark') {
+            htmlElement.setAttribute('data-bs-theme', 'light');
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+            for (const key of keys) {
+              key.classList.remove('text-primary-emphasis');
+              key.classList.add('text-primary');
+            }
+            for (const value of values) {
+              value.classList.remove('text-warning-emphasis');
+              value.classList.add('text-danger');
+            }
+          } else {
+            htmlElement.setAttribute('data-bs-theme', 'dark');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+            for (const key of keys) {
+              key.classList.remove('text-primary');
+              key.classList.add('text-primary-emphasis');
+            }
+            for (const value of values) {
+              value.classList.remove('text-danger');
+              value.classList.add('text-warning-emphasis');
+            }
+          }
+        });
+      });
+    </script>
+    <script src="firebase-config.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+      import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase();
+
+      const dbRef = ref(db, 'users');
+      
+      onValue(dbRef, (snapshot) => {
+            // Clear the previous list items
+            const userData = document.getElementById("userList");
+            userData.innerHTML = "";
+
+            // Retrieve the data from the snapshot
+            const data = snapshot.val();
+
+            // Check if data is not empty
+            if (data) {
+                // Combine all user lists into a single array
+                const userListArray = Object.keys(data).map((randomUserId) => {
+                    // Create a new list for each user
+                    const userList = document.createElement("ul");
+                    userList.classList.add("list-group", "mb-4"); 
+
+                    // Iterate through the sub keys and values for each user
+                    Object.entries(data[randomUserId]).forEach(([key, value]) => {
+                        const listItem = document.createElement("li");
+                        listItem.classList.add("list-group-item");
+                        // Create span elements for key and value
+                        const keySpan = document.createElement("span");
+                        keySpan.textContent = key;
+                        keySpan.classList.add("key", "text-primary-emphasis", "fw-bold");
+                        listItem.appendChild(keySpan);
+
+                        const colonSpan = document.createElement("span");
+                        colonSpan.textContent = ": ";
+                        listItem.appendChild(colonSpan);
+
+                        const valueSpan = document.createElement("span");
+                        valueSpan.textContent = value;
+                        valueSpan.classList.add("value", "text-warning-emphasis", "fw-bolder");
+                        listItem.appendChild(valueSpan);
+
+                        userList.appendChild(listItem);
+                    });
+
+                    return userList;
+                });
+
+                // Reverse the array to show the latest data first
+                userListArray.reverse();
+
+                // Append the user lists to the main container with horizontal rules
+                userListArray.forEach((userList, index) => {
+                    userData.appendChild(userList);
+                    /*
+                    if (index !== userListArray.length - 1) {
+                        // Add horizontal rule between user lists
+                        const hr = document.createElement("hr");
+                        userData.appendChild(hr);
+                    }
+                    */
+                });
+            }
+        });
+      </script>
+    <script>
+      window.onload = function() {
+        setTimeout(function() {
+            document.getElementById("loading").style.display ='none';
+            document.getElementById("main").classList.remove('hidden');
+        }, 300);
+      };
+    </script>
+  </body>
+</html>
